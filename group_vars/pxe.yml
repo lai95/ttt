@@ -1,0 +1,53 @@
+---
+# PXE network/interface
+pxe_interface: "ens192"  # set to NIC used for PXE
+pxe_server_ip: "192.0.2.10"  # IP bound on pxe_interface
+
+# Mode: 'dhcp' (acts as DHCP) or 'proxydhcp' (only PXE options)
+pxe_mode: "proxydhcp"
+
+# DHCP settings (used when pxe_mode == 'dhcp')
+pxe_dhcp_range_start: "192.0.2.100"
+pxe_dhcp_range_end: "192.0.2.200"
+pxe_dhcp_netmask: "255.255.255.0"
+pxe_dhcp_gateway: "192.0.2.1"
+pxe_dhcp_dns: ["192.0.2.1", "1.1.1.1"]
+pxe_dhcp_domain: "lab.local"
+
+# Paths
+tftp_root: "/var/lib/tftpboot"
+http_root: "/var/www/pxe"
+
+# Nginx
+pxe_server_name: "_"  # or FQDN
+nginx_pxe_location: "/pxe/"
+nginx_autoindex: true
+
+# iPXE menu
+ipxe_menu_title: "Diagnostics & Tools"
+ipxe_menu_timeout_ms: 8000
+ipxe_default_entry: "alpine"
+
+ipxe_menu_entries:
+  - id: "alpine"
+    name: "Alpine Linux (memory diagnostic shell)"
+    kernel_url: "http://{{ pxe_server_ip }}/pxe/images/alpine/vmlinuz-lts"
+    initrd_url: "http://{{ pxe_server_ip }}/pxe/images/alpine/initramfs-lts"
+    cmdline: "ip=dhcp nomodeset quiet"
+  - id: "memtest"
+    name: "Memtest86+"
+    kernel_url: "http://{{ pxe_server_ip }}/pxe/images/memtest/memtest"
+    initrd_url: ""
+    cmdline: ""
+
+# SELinux booleans (kept strict by default)
+selinux_enforce: true
+
+# Firewalld zones and ports
+firewalld_zone: "public"
+open_ports:
+  - { port: 80, proto: tcp }     # HTTP for iPXE menus and images
+  - { port: 69, proto: udp }     # TFTP
+  - { port: 67, proto: udp }     # DHCP (server mode)
+  - { port: 4011, proto: udp }   # ProxyDHCP
+

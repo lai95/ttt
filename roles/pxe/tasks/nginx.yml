@@ -1,0 +1,30 @@
+---
+- name: Ensure nginx site directory exists
+  ansible.builtin.file:
+    path: /etc/nginx/conf.d
+    state: directory
+    mode: '0755'
+
+- name: Deploy nginx PXE site
+  ansible.builtin.template:
+    src: nginx-pxe.conf.j2
+    dest: /etc/nginx/conf.d/pxe.conf
+    mode: '0644'
+  notify: reload nginx
+
+- name: Create ipxe menu directory
+  ansible.builtin.file:
+    path: "{{ http_root }}/menu"
+    state: directory
+    mode: '0755'
+    owner: nginx
+    group: nginx
+
+- name: Render main iPXE menu
+  ansible.builtin.template:
+    src: ipxe-menu.ipxe.j2
+    dest: "{{ http_root }}/menu/main.ipxe"
+    mode: '0644'
+    owner: nginx
+    group: nginx
+

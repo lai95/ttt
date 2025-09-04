@@ -1,0 +1,44 @@
+---
+- name: Ensure SELinux is enforcing (if requested)
+  ansible.builtin.command: getenforce
+  register: selinux_status
+  changed_when: false
+
+- name: Fail if SELinux must be enforcing and is not
+  ansible.builtin.fail:
+    msg: "SELinux is not enforcing. Set enforcing or set selinux_enforce=false to proceed."
+  when: selinux_enforce | bool and selinux_status.stdout != 'Enforcing'
+
+- name: Set SELinux context for TFTP root
+  community.general.sefcontext:
+    target: "{{ tftp_root }}(/.*)?"
+    setype: tftpdir_t
+    state: present
+
+- name: Set SELinux context for HTTP root
+  community.general.sefcontext:
+    target: "{{ http_root }}(/.*)?"
+    setype: httpd_sys_content_t
+    state: present
+
+- name: Restore SELinux contexts on PXE directories
+  ansible.builtin.command: "restorecon -Rv {{ tftp_root }} {{ http_root }}"
+  changed_when: false
+
+- name: Open required firewall ports
+  ansible.posix.firewalld:
+    port: "{{ item.port }}/{{ item.proto }}"
+    permanent: true
+    state: enabled
+    immediate: true
+    zone: "{{ firewalld_zone }}"
+  loop: "{{ open_ports }}"
+
+- name: Allow dnsmasq to bind only to PXE interface via firewalld rich rules (optional)
+  ansible.posix.firewalld:
+    rich_rule: "rule family=ipv4 source address=0.0.0.0/0 port port=67 protocol=udp accept"
+    state: enabled
+    permanent: true
+    immediate: true
+  when: pxe_mode == 'dhcp'
+

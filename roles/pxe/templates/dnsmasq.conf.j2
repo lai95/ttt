@@ -1,0 +1,37 @@
+# Managed by Ansible
+port=0
+log-queries
+log-dhcp
+enable-tftp
+tftp-root={{ tftp_root }}
+interface={{ pxe_interface }}
+bind-interfaces
+
+# Set the boot filenames depending on architecture
+# If client is already iPXE, chain to HTTP menu directly
+dhcp-userclass=set:ipxe,iPXE
+dhcp-boot=tag:ipxe,http://{{ pxe_server_ip }}/pxe/menu/main.ipxe
+# Otherwise provide initial network loaders per arch
+# x86 BIOS
+dhcp-match=set:x86,option:client-arch,0
+dhcp-boot=tag:x86,pxelinux.0,{{ pxe_server_ip }},{{ pxe_server_ip }}
+
+# UEFI x86-64
+dhcp-match=set:efi-x86_64,option:client-arch,7
+dhcp-boot=tag:efi-x86_64,ipxe.efi,{{ pxe_server_ip }},{{ pxe_server_ip }}
+
+# ProxyDHCP vs DHCP
+{% if pxe_mode == 'proxydhcp' %}
+dhcp-range={{ pxe_server_ip }},proxy
+dhcp-option=60,PXEClient
+{% else %}
+dhcp-range={{ pxe_dhcp_range_start }},{{ pxe_dhcp_range_end }},{{ pxe_dhcp_netmask }},12h
+dhcp-option=option:router,{{ pxe_dhcp_gateway }}
+dhcp-option=option:dns-server,{% for s in pxe_dhcp_dns %}{{ s }}{% if not loop.last %},{% endif %}{% endfor %}
+dhcp-option=option:domain-name,{{ pxe_dhcp_domain }}
+{% endif %}
+
+# Chainload to iPXE script via TFTP loader and then HTTP menu
+pxe-service=X86PC,"Boot to iPXE (BIOS)",undionly.kpxe
+pxe-service=BC_EFI,"Boot to iPXE (UEFI x86_64)",ipxe.efi
+

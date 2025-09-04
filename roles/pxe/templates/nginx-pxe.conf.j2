@@ -1,0 +1,11 @@
+# Managed by Ansible
+server {
+    listen 80 default_server;
+    server_name {{ pxe_server_name }};
+
+    location {{ nginx_pxe_location }} {
+        alias {{ http_root }}/;
+        autoindex {{ 'on' if nginx_autoindex else 'off' }};
+    }
+}
+

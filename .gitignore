@@ -1,0 +1,23 @@
+# Editors/OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*.log
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Ansible
+*.retry
+.ansible/
+
+# Local overrides
+inventory.local.ini
+group_vars/*.vault.yml
+

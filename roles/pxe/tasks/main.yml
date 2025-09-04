@@ -1,0 +1,16 @@
+---
+- name: Include package installation
+  ansible.builtin.import_tasks: packages.yml
+
+- name: Configure dnsmasq
+  ansible.builtin.import_tasks: dnsmasq.yml
+
+- name: Configure TFTP and bootloaders
+  ansible.builtin.import_tasks: tftp.yml
+
+- name: Configure nginx and iPXE menus
+  ansible.builtin.import_tasks: nginx.yml
+
+- name: Apply SELinux contexts and firewalld rules
+  ansible.builtin.import_tasks: selinux_firewalld.yml
+

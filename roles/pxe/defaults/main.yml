@@ -1,0 +1,18 @@
+---
+pxe_packages:
+  - dnsmasq
+  - tftp-server
+  - syslinux
+  - ipxe-bootimgs
+  - nginx
+  - firewalld
+  - policycoreutils-python-utils
+
+# Whether to try downloading example images automatically (not enabled by default)
+auto_download_images: false
+
+# Example download sources (used only if auto_download_images is true)
+alpine_kernel_url: "https://dl-cdn.alpinelinux.org/alpine/v3.19/releases/x86_64/netboot/vmlinuz-lts"
+alpine_initrd_url: "https://dl-cdn.alpinelinux.org/alpine/v3.19/releases/x86_64/netboot/initramfs-lts"
+memtest_binary_url: "https://www.memtest.org/download/5.31b/binaries/memtest86+-5.31b.bin.gz"
+

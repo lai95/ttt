@@ -1,0 +1,38 @@
+---
+- name: Create dnsmasq.d directory
+  ansible.builtin.file:
+    path: /etc/dnsmasq.d
+    state: directory
+    mode: '0755'
+
+- name: Deploy dnsmasq PXE configuration
+  ansible.builtin.template:
+    src: dnsmasq.conf.j2
+    dest: /etc/dnsmasq.d/pxe.conf
+    mode: '0644'
+  notify: restart dnsmasq
+
+- name: Ensure dnsmasq loads configs from /etc/dnsmasq.d
+  ansible.builtin.lineinfile:
+    path: /etc/dnsmasq.conf
+    regexp: '^conf-dir='
+    line: 'conf-dir=/etc/dnsmasq.d,*.conf'
+    create: true
+  notify: restart dnsmasq
+
+- name: Limit dnsmasq to PXE interface only
+  ansible.builtin.lineinfile:
+    path: /etc/dnsmasq.conf
+    regexp: '^interface='
+    line: "interface={{ pxe_interface }}"
+    create: true
+  notify: restart dnsmasq
+
+- name: Ensure dnsmasq binds to interfaces
+  ansible.builtin.lineinfile:
+    path: /etc/dnsmasq.conf
+    regexp: '^bind-interfaces'
+    line: 'bind-interfaces'
+    create: true
+  notify: restart dnsmasq
+

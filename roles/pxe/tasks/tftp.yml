@@ -1,0 +1,100 @@
+---
+- name: Create TFTP root directory
+  ansible.builtin.file:
+    path: "{{ tftp_root }}"
+    state: directory
+    mode: '0755'
+
+- name: Create PXE HTTP root directory
+  ansible.builtin.file:
+    path: "{{ http_root }}"
+    state: directory
+    mode: '0755'
+    owner: nginx
+    group: nginx
+
+- name: Populate syslinux bootloader into TFTP
+  ansible.builtin.copy:
+    src: "/usr/share/syslinux/pxelinux.0"
+    dest: "{{ tftp_root }}/pxelinux.0"
+    remote_src: true
+    mode: '0644'
+
+- name: Copy syslinux menu modules
+  ansible.builtin.copy:
+    src: "/usr/share/syslinux/menu.c32"
+    dest: "{{ tftp_root }}/menu.c32"
+    remote_src: true
+    mode: '0644'
+
+- name: Copy iPXE binaries
+  ansible.builtin.copy:
+    src: "/usr/share/ipxe/undionly.kpxe"
+    dest: "{{ tftp_root }}/undionly.kpxe"
+    remote_src: true
+    mode: '0644'
+
+- name: Copy iPXE EFI binary (x86_64)
+  ansible.builtin.copy:
+    src: "/usr/share/ipxe/ipxe.efi"
+    dest: "{{ tftp_root }}/ipxe.efi"
+    remote_src: true
+    mode: '0644'
+
+- name: Create TFTP pxelinux.cfg directory
+  ansible.builtin.file:
+    path: "{{ tftp_root }}/pxelinux.cfg"
+    state: directory
+    mode: '0755'
+
+- name: Seed default pxelinux.cfg to chain to iPXE
+  ansible.builtin.copy:
+    dest: "{{ tftp_root }}/pxelinux.cfg/default"
+    mode: '0644'
+    content: |
+      DEFAULT menu
+      PROMPT 0
+      TIMEOUT 30
+      LABEL boot
+        MENU LABEL Chain to iPXE
+        KERNEL undionly.kpxe
+
+- name: Images directory structure
+  ansible.builtin.file:
+    path: "{{ http_root }}/images/{{ item }}"
+    state: directory
+    mode: '0755'
+    owner: nginx
+    group: nginx
+  loop:
+    - alpine
+    - memtest
+
+- name: Optionally download Alpine kernel/initrd
+  when: auto_download_images | bool
+  block:
+    - name: Download Alpine kernel
+      ansible.builtin.get_url:
+        url: "{{ alpine_kernel_url }}"
+        dest: "{{ http_root }}/images/alpine/vmlinuz-lts"
+        mode: '0644'
+    - name: Download Alpine initrd
+      ansible.builtin.get_url:
+        url: "{{ alpine_initrd_url }}"
+        dest: "{{ http_root }}/images/alpine/initramfs-lts"
+        mode: '0644'
+
+- name: Optionally download Memtest binary (plain, if available)
+  when: auto_download_images | bool
+  block:
+    - name: Download memtest (gzip) if URL provided
+      ansible.builtin.get_url:
+        url: "{{ memtest_binary_url }}"
+        dest: "{{ http_root }}/images/memtest/memtest.gz"
+        mode: '0644'
+      when: memtest_binary_url | length > 0
+    - name: Decompress memtest.gz if present
+      ansible.builtin.shell: "gunzip -c '{{ http_root }}/images/memtest/memtest.gz' > '{{ http_root }}/images/memtest/memtest'"
+      args:
+        creates: "{{ http_root }}/images/memtest/memtest"
+

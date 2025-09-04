@@ -1,0 +1,27 @@
+#!ipxe
+set menu-timeout {{ ipxe_menu_timeout_ms }}
+set menu-default {{ ipxe_default_entry }}
+
+echo {{ ipxe_menu_title }}
+menu {{ ipxe_menu_title }}
+
+{% for entry in ipxe_menu_entries %}
+item --key {{ loop.index }} {{ entry.id }} {{ entry.name }}
+{% endfor %}
+
+choose selected || exit
+goto ${selected}
+
+{% for entry in ipxe_menu_entries %}
+:{{ entry.id }}
+{% if entry.initrd_url %}
+initrd {{ entry.initrd_url }}
+{% endif %}
+kernel {{ entry.kernel_url }} {{ entry.cmdline }}
+boot || goto failed
+{% endfor %}
+
+:failed
+echo Boot failed, dropping to shell
+shell
+
